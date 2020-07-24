@@ -3,7 +3,7 @@ import {useHistory, withRouter} from 'react-router-dom';
 import './App.css';
 
 /** @jsx jsx */
-import { css, jsx } from '@emotion/core'
+import { css, jsx } from '@emotion/core';
 
 function App(props) {
 
@@ -12,51 +12,66 @@ function App(props) {
     const history = useHistory();
     const {match: {params}} = props;
     const [data, SetData] = useState('');
+    const [preload, SetPreload] = useState(true);
     const [filtered, SetFiltered] = useState([]);
     const [fieldValue, SetFieldValue] = useState('');
 
-    const style = css`color: blue; border-radius: 4px;width: 250px; height: 30px;`
+    const inputStyles = css`color: blue; border-radius: 4px;width: 250px; height: 30px;`;
 
+    /**
+     * Fetch data from API in case of error get it from DATASET var;
+     */
     useEffect(() => {
         fetch('https://api.npoint.io/e3d0d99c950f357b48e6')
                 .then(response => response.json())
-                .then(result =>  SetData(result ? result : DATASET))
-                .catch(e => console.log(e));
+                .then(result => SetData(result))
+                .catch(e => SetData(DATASET));
     }, []);
 
+    /**
+     * Act on data change
+     */
     useEffect(() => {
-        if (params.query) {
-            filteredName(params.query);
-        }
+        if (params.query) filteredName(params.query);
+        if (data) SetPreload(false);
     }, [data]);
 
+    /**
+     * Act on field change
+     */
     const handleFieldChange = (val) => {
         if (val) {
-            history.push(`/${val}`);
             filteredName(val);
         } else {
-            history.push(`/`);
+            history.replace(`/`);
             SetFieldValue('');
         }
     }
 
+    /**
+     * Filter data array and set filtered and field values
+     */
     const filteredName = (request) => {
         SetFieldValue(request);
         SetFiltered([...data].filter(name => name.toLowerCase() === request.toLowerCase()));
+        history.replace(`/${request}`);
     }
 
+    /**
+     * Expose the magic
+     */
     return (
         <div className="App">
             <header className="App-header">
                 <p>Search for the truth !!!</p>
                 <input type="text"
-                       css={style}
                        autoFocus
+                       css={inputStyles}
                        value={fieldValue}
                        placeholder="Some Query for ex: Artoo"
                        onChange={e => handleFieldChange(e.target.value)}/>
 
-                {filtered.map((name, index) => <p key={index}>{name}</p>)}
+                {preload ? (<p>...Loading Data</p>) : (filtered.map((name, index) => <p key={index}>{name}</p>))}
             </header>
         </div>
     );
